@@ -109,10 +109,11 @@ public class NoteService {
             System.out.println("Ошибка: пользователь не установлен.");
             return;
         }
+        notes.computeIfAbsent(user.getUserName(), k -> new ArrayList<>()).add(note);
+        map.computeIfAbsent(currentUser, K -> new ArrayList<>()).add(note);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(getNotePath().toFile(), true))) {
             writer.write(user.getUserName() + "|" + note.getName() + "|" + note.getContent());
             writer.newLine();
-            notes.computeIfAbsent(user.getUserName(), k -> new ArrayList<>()).add(note);
         } catch (IOException e) {
             System.out.println("Не удалось сохранить заметку " + note.getName() + " в файл " + e.getMessage());
         }
