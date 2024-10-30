@@ -105,7 +105,7 @@ public class UserService {
 
         try (BufferedWriter bwUser = new BufferedWriter(new FileWriter(getUsersPath().toFile(), true));
              BufferedWriter bwUserName = new BufferedWriter(new FileWriter(getUsersNamePath().toFile(), true))) {
-            bwUser.write(user.getLogin() + "|" + user.getPassword());
+            bwUser.write(user.getLogin() + "|" + user.getPassword() + "|" + user.getUserName());
             bwUser.newLine();
             bwUserName.write(user.getUserName());
             bwUserName.newLine();
@@ -121,10 +121,11 @@ public class UserService {
             String userLoginAndPassword;
             while ((userLoginAndPassword = brUser.readLine()) != null) {
                 String[] parts = userLoginAndPassword.split("\\|");
-                if (parts.length == 2) {
-                    String login = parts[0];
-                    String password = parts[1];
-                    users.add(new User(login, password, ""));
+                if (parts.length == 3) {
+                    String login = parts[0].trim();
+                    String password = parts[1].trim();
+                    String name = parts[2].trim();
+                    users.add(new User(login, password, name));
                 }
             }
 

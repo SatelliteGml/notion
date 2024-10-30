@@ -127,9 +127,9 @@ public class NoteService {
                 String[] parts = line.split("\\|", 3);
                 if (parts.length < 3) continue;
 
-                String userName = parts[0];
-                String noteName = parts[1];
-                String noteContent = parts[2];
+                String userName = parts[0].trim();
+                String noteName = parts[1].trim();
+                String noteContent = parts[2].trim();
 
                 User user = new User("", "", userName);
                 Note note = new Note(noteName, noteContent);
