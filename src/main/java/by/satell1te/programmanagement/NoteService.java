@@ -11,48 +11,57 @@ import java.util.*;
 public class NoteService {
     private static final String NOTE_PATH = "src/main/resources/notes.txt";
     private static final Scanner SCANNER = new Scanner(System.in);
-    private final List<Note> noteList = new ArrayList<>();
     private final Map<User, List<Note>> map = new HashMap<>();
-    private final Map<String, List<Note>> notes = new HashMap<>();
     private User currentUser;
 
     public NoteService() {
-        loadNotesFromDB();
     }
 
     public void setCurrentUser(User user) {
         this.currentUser = user;
+        loadNotesFromDB();
     }
 
-    public Note createNoteCommand() {
+    public void clearUserNotes() {
+        if (currentUser != null) {
+            map.remove(currentUser);
+            currentUser = null;
+        }
+    }
+
+
+    public void createNoteCommand() {
         String name = promptInput("Введите название заметки: ");
         String content = promptInput("Введите текст: ");
         Note note = new Note(name, content);
         addNoteToUser(note);
-        saveNoteToDB(note, currentUser);
-        return note;
+        saveNoteToDB(note);
     }
 
     private void addNoteToUser(Note note) {
         map.computeIfAbsent(currentUser, k -> new ArrayList<>()).add(note);
-        notes.computeIfAbsent(currentUser.getUserName(), k -> new ArrayList<>()).add(note);
     }
 
     public void showNamesOfNote() {
-        List<Note> userNotes = notes.get(currentUser.getUserName());
-        int index = 1;
+        List<Note> userNotes = map.get(currentUser);
         if (userNotes == null || userNotes.isEmpty()) {
             System.out.println("Нету заметок");
-        } else {
-            System.out.println("Заметки пользователя: ");
-            for (Note note : userNotes) {
-                System.out.println(index + ": " + note.getName());
-                index++;
-            }
+            return;
+        }
+
+        System.out.println("Заметки пользователя: ");
+        for (int index = 0; index < userNotes.size(); index++) {
+            System.out.println((index + 1) + ": " + userNotes.get(index).getName());
         }
     }
 
+
     public void showNoteContent() {
+        if (currentUser == null) {
+            System.out.println("Ошибка: пользователь не установлен.");
+            return;
+        }
+
         String string = promptInput("Введите номер заметки: ");
         int choice;
 
@@ -63,59 +72,100 @@ public class NoteService {
             return;
         }
 
-        List<Note> userNotes = notes.get(currentUser.getUserName());
+        List<Note> userNotes = map.get(currentUser);
 
         if (userNotes == null || userNotes.isEmpty()) {
             System.out.println("У пользователя нету заметок");
         }
 
-        if (choice < 1 || choice > userNotes.size()) {
+        if (userNotes != null && (choice < 1 || choice > userNotes.size())) {
             System.out.println("Ошибка: номер заметки вне диапазона.");
         }
+        assert userNotes != null;
         Note selectedNote = userNotes.get(choice - 1);
+        System.out.println("Автор заметки: " + currentUser.getUserName());
         System.out.println("Содержимое заметки:\n" + selectedNote.getContent());
     }
 
-    public void loadUserNotes(User user) {
-        List<Note> list = notes.get(user.getUserName());
+//    public void loadUserNotes(User user) {
+//        List<Note> list = map.get(currentUser);
+//    }
 
-    }
-
+    //    private void loadNotesFromDB() {
+//        if (currentUser == null) {
+//            System.out.println("Ошибка: текущий пользователь не установлен.");
+//            return;
+//        }
+//
+//        map.put(currentUser, new ArrayList<>());
+//        try (BufferedReader reader = new BufferedReader(new FileReader(getNotePath().toFile()))) {
+//            String line;
+//            while ((line = reader.readLine()) != null) {
+//                String[] parts = line.split("\\|", 3);
+//                if (parts.length < 3) {
+//                    System.out.println("Некорректная строка в файле заметок" + line);
+//                    continue;
+//                }
+//
+//                String userName = parts[0].trim();
+//                String name = parts[1].trim();
+//                String content = parts[2].trim();
+//
+//                if (currentUser.getUserName().equals(userName)) {
+//                    Note note = new Note(name, content);
+//                    addNoteToUser(note);
+//                }
+//            }
+//        } catch (IOException e) {
+//            System.out.println("Не удалось загрузить заметки из файла " + e.getMessage());
+//        }
+//    }
     private void loadNotesFromDB() {
-        List<Note> tmp = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(getNotePath().toFile()))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split("\\|", 3);
-                if (parts.length < 3) {
-                    System.out.println("Некорректная строка в файле заметок" + line);
-                    continue;
-                }
+                if (parts.length < 3) continue;
 
-                String user = parts[0].trim();
-                String name = parts[1].trim();
-                String content = parts[2].trim();
-                Note note = new Note(name, content);
-                tmp.add(note);
-                notes.computeIfAbsent(user, k -> new ArrayList<>()).add(note);
+                String userName = parts[0];
+                String noteName = parts[1];
+                String noteContent = parts[2];
+
+                User user = new User("", "", userName);
+                Note note = new Note(noteName, noteContent);
+                map.computeIfAbsent(user, k -> new ArrayList<>()).add(note);
             }
         } catch (IOException e) {
-            System.out.println("Не удалось загрузить заметки из файла " + e.getMessage());
+            System.out.println("Ошибка при загрузке заметок: " + e.getMessage());
         }
     }
 
-    private void saveNoteToDB(Note note, User user) {
-        if (user == null) {
-            System.out.println("Ошибка: пользователь не установлен.");
-            return;
-        }
-        notes.computeIfAbsent(user.getUserName(), k -> new ArrayList<>()).add(note);
-        map.computeIfAbsent(currentUser, K -> new ArrayList<>()).add(note);
+//    private void saveNoteToDB(Note note) {
+//        if (currentUser == null) {
+//            System.out.println("Ошибка: пользователь не установлен.");
+//            return;
+//        }
+//        try (BufferedWriter writer = new BufferedWriter(new FileWriter(getNotePath().toFile(), true))) {
+//            writer.write(currentUser.getUserName() + "|" + note.getName() + "|" + note.getContent());
+//            writer.newLine();
+//        } catch (IOException e) {
+//            System.out.println("Не удалось сохранить заметку " + note.getName() + " в файл " + e.getMessage());
+//        }
+//    }
+
+    private void saveNoteToDB(Note note) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(getNotePath().toFile(), true))) {
-            writer.write(user.getUserName() + "|" + note.getName() + "|" + note.getContent());
-            writer.newLine();
+            for (Map.Entry<User, List<Note>> entry : map.entrySet()) {
+                String userName = entry.getKey().getUserName();
+                for (Note value : entry.getValue()) {
+                    writer.write(userName + "|" + note.getName() + "|" + note.getContent());
+                    writer.newLine();
+                }
+            }
+            System.out.println("Заметки сохранены в базу");
+
         } catch (IOException e) {
-            System.out.println("Не удалось сохранить заметку " + note.getName() + " в файл " + e.getMessage());
+            System.out.println("Ошибка при сохранении заметок: " + e.getMessage());
         }
     }
 
@@ -132,11 +182,6 @@ public class NoteService {
     private Path getNotePath() {
         return Paths.get(NOTE_PATH);
     }
-
-    public List<Note> getNoteList() {
-        return noteList;
-    }
-
 
     public Map<User, List<Note>> getMap() {
         return map;

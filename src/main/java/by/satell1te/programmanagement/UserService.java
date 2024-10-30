@@ -13,6 +13,7 @@ public class UserService {
     private static final Scanner SCANNER = new Scanner(System.in);
     private static final String USERS_PATH = "src/main/resources/users.txt";
     private static final String USERS_NAME_PATH = "src/main/resources/userNames.txt";
+    private final NoteService noteService = new NoteService();
     private User currentUser = null;
     private final List<User> users = new ArrayList<>();
     private final List<String> userNameList = new ArrayList<>();
@@ -42,7 +43,6 @@ public class UserService {
         if (currentUser != null) {
             System.out.println("Успешный вход в систему для: " + currentUser.getLogin());
             noteService.setCurrentUser(currentUser);
-            noteService.loadUserNotes(currentUser);
             return true; // Успешная аутентификация
         } else {
             System.out.println("Ошибка входа: неверный логин или пароль.");
@@ -69,6 +69,7 @@ public class UserService {
         if (currentUser == null) {
             System.out.println("Вы не авторизованы. Невозможно выйти из системы.");
         } else {
+            noteService.clearUserNotes();
             currentUser = null; // Сбрасываем текущего пользователя
             System.out.println("Вы вышли из системы.");
         }
